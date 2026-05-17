@@ -24,7 +24,7 @@ reg [3:0]count_bit;
 reg [7:0]shift;
  
 //state register
-always @(posedge clk or negedge rst)
+always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
         c_state <= idle;
@@ -33,7 +33,7 @@ begin
 end
  
 
-always @(posedge clk or negedge rst)
+always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
     begin
@@ -43,28 +43,34 @@ begin
         xmit_doneH <= 1'b0;
     end
     
-    else //if (baud_tick)   
+    else if (baud_tick)   
     begin
         xmit_doneH <= 1'b0;   
  
         if (c_state == idle && xmitH)
         begin
             shift     <= xmit_dataH;
-            count     <= 4'd0;
+            //count     <= 4'd0;
             count_bit <= 4'd0;
         end
  
-        if (count == 4'd15)
-        begin
-            count     <= 4'd0;
-            count_bit <= count_bit + 1;
+        //if (count == 4'd15)
+        //begin
+            //count     <= 4'd0;
  
             if (c_state == data)
-                shift <= shift >> 1;
+				begin
+                	shift <= shift >> 1;
+					count_bit <= count_bit + 1;
+				end
            
-            if (c_state == stop && count_bit == 4'd9)
-                xmit_doneH <= 1'b1;
-        end
+            if (c_state == stop )
+				begin
+					xmit_doneH <= 1'b1;
+        			count_bit <= 4'd0;
+				end
+        /*
+		end
         else
         begin
             if (c_state == idle)
@@ -75,6 +81,7 @@ begin
             else
                 count <= count + 1;
         end
+		*/
     end
 end
  
@@ -83,9 +90,9 @@ always @(*)
 begin
     case (c_state)
              idle: n_state = xmitH?start:idle;
-             start: n_state = (count == 4'd15)?data:start;
-             data: n_state = (count_bit == 4'd8 && count==4'd15)?stop:data;
-             stop: n_state = (count == 4'd15)?idle:stop;
+             start: n_state = data;
+             data: n_state = (count_bit == 4'd7 )?stop:data;
+             stop: n_state = idle;
              default: n_state = idle;
     endcase
 end
