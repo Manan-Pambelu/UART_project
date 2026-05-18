@@ -92,7 +92,7 @@ begin
         idle:n_state = (INP == 1'b0)? start:idle;
         start:n_state = (count_bit == 4'd1)? data_rec:start;
         data_rec:n_state = (count_bit == 4'd9)? stop:data_rec;
-        stop:n_state = (count_bit == 4'd10 && count == 4'd15)? idle:stop;
+        stop:n_state = (count_bit == 4'd10 && count == 4'd0)? idle:stop;
         default:n_state = idle;
     endcase
 end
