@@ -1,30 +1,46 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module U_xmit (
-    input  wire clk,
-    input  wire rst,
-    input  wire baud_tick,   
-    input  wire xmitH,
-    input  wire [7:0]xmit_dataH,
-    output wire xmit_active,
-    output reg  xmit_doneH,
-    output reg  uart_xmit_dataH
+module U_rec(
+   input  wire  clk,
+   input  wire  rst,
+   input  wire  baud_tick,          
+   input  wire  uart_rec_dataH,
+   output reg  [7:0]rec_dataH,
+   output reg  rec_readyH,
+   output wire  rec_busy
 );
  
-parameter idle= 2'b00;
-parameter start= 2'b01;
-parameter data= 2'b10;
-parameter stop= 2'b11;
+parameter idle     = 2'b00;
+parameter start    = 2'b01;
+parameter data_rec = 2'b10;
+parameter stop     = 2'b11;
  
 reg [1:0]c_state;
 reg [1:0]n_state;
+reg [7:0]shift_rec;
 reg [3:0]count;
 reg [3:0]count_bit;
-reg [7:0]shift;
+reg FF1,FF2;
+wire INP=FF2;
+ 
+//synchronizer
+always @(posedge clk or negedge rst)
+begin
+    if (!rst)
+    begin
+        FF1 <= 1'b1;
+        FF2 <= 1'b1;
+    end
+    else
+    begin
+        FF1 <= uart_rec_dataH;
+        FF2 <= FF1;
+    end
+end
  
 //state register
-always @(posedge baud_tick or negedge rst)
+always @(posedge clk or negedge rst)
 begin
     if (!rst)
         c_state <= idle;
@@ -32,44 +48,36 @@ begin
         c_state <= n_state;
 end
  
-
-always @(posedge baud_tick or negedge rst)
+always @(posedge clk or negedge rst)
 begin
     if (!rst)
     begin
         count     <= 4'd0;
         count_bit <= 4'd0;
-        shift     <= 8'd0;
-        xmit_doneH <= 1'b0;
+        shift_rec <= 8'd0;
     end
-    
     else if (baud_tick)   
     begin
-        xmit_doneH <= 1'b0;   
- 
-        if (c_state == idle && xmitH)
-        begin
-            shift     <= xmit_dataH;
-            count     <= 4'd0;
-            count_bit <= 4'd0;
-        end
- 
         if (count == 4'd15)
         begin
-            count     <= 4'd0;
-            count_bit <= count_bit + 1;
+            count<= 4'd0;
+            count_bit<= count_bit+1;
  
-            if (c_state == data)   shift <= shift >> 1;
-           
-            if (c_state == stop && count_bit == 4'd9)   xmit_doneH <= 1'b1;
-            
+            if (c_state== data_rec)
+                shift_rec <={INP, shift_rec[7:1]};
         end
         else
         begin
-            if (c_state == idle)
+        
+            if (c_state == stop)
             begin
-                count     <= 4'd0;
-                count_bit <= 4'd0;
+                rec_dataH <= shift_rec;
+            end
+            
+            if (c_state==idle)
+            begin
+                count <=(INP == 1'b0)? 4'd8:4'd0;
+                count_bit<=4'd0;
             end
             else
                 count <= count + 1;
@@ -77,33 +85,37 @@ begin
     end
 end
  
-//next state logic 
+//next state logic
 always @(*)
 begin
     case (c_state)
-             idle: n_state = xmitH?start:idle;
-             start: n_state = (count == 4'd15)?data:start;
-             data: n_state = (count_bit == 4'd8 && count==4'd15)?stop:data;
-             stop: n_state = (count == 4'd15)?idle:stop;
-             default: n_state = idle;
+        idle:n_state = (INP == 1'b0)? start:idle;
+        start:n_state = (count_bit == 4'd1)? data_rec:start;
+        data_rec:n_state = (count_bit == 4'd9)? stop:data_rec;
+        stop:n_state = (count_bit == 4'd10 && count == 4'd15)? idle:stop;
+        default:n_state = idle;
     endcase
 end
  
-//serial output
-always @(*)
+
+always @(posedge clk or negedge rst)
 begin
     if (!rst)
-        uart_xmit_dataH = 1'b1;
+    begin
+        rec_dataH <= 8'd0;
+        rec_readyH<=1'b0;
+    end
     else
-        case (c_state)
-            idle: uart_xmit_dataH = 1'b1;
-            start: uart_xmit_dataH = 1'b0;
-            data: uart_xmit_dataH = shift[0];
-            stop: uart_xmit_dataH = 1'b1;
-            default: uart_xmit_dataH = 1'b1;
-        endcase
+    begin
+        rec_readyH<= 1'b0;
+        if (c_state == stop && count == 4'd15 && count_bit == 4'd10)
+        begin
+            rec_dataH <= shift_rec;
+            rec_readyH <= 1'b1;
+        end
+    end
 end
  
-assign xmit_active =(c_state!=idle);
+assign rec_busy=(c_state!= idle);
  
 endmodule
