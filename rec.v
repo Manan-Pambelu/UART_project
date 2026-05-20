@@ -40,7 +40,7 @@ begin
 end
  
 //state register
-always @(posedge clk or negedge rst)
+   always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
         c_state <= idle;
@@ -48,7 +48,7 @@ begin
         c_state <= n_state;
 end
  
-always @(posedge clk or negedge rst)
+   always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
     begin
@@ -98,7 +98,7 @@ begin
 end
  
 
-always @(posedge clk or negedge rst)
+   always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
     begin
