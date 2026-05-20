@@ -8,8 +8,6 @@ localparam integer Div = (sys_clk / (baud_rate * OVERSAMPLE));
  
 reg [31:0] count;
 
-reg baud_xmit;
-reg count_temp;
  localparam integer Divv = (sys_clk / (baud_rate ));
 
 always @(posedge clk or negedge sys_rst_l)
