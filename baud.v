@@ -34,26 +34,5 @@ begin
     end
 end
 
-always @(posedge clk or negedge sys_rst_l)
-begin
-    if (!sys_rst_l)
-    begin
-        count_temp     <= 32'd0;
-        baud_xmit <= 1'b0;
-    end
-    else
-    begin
-        if (count_temp == Divv - 1)
-        begin
-            count_temp     <= 32'd0;
-            baud_xmit <= 1'b1;
-        end
-        else
-        begin
-            count_temp     <= count_temp + 1;
-            baud_xmit <= 1'b0;
-        end
-    end
-end
  
 endmodule
