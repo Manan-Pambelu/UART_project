@@ -8,7 +8,7 @@ module U_xmit (
     input  wire xmitH,
     input  wire [7:0]xmit_dataH,
     output wire xmit_active,
-    output reg  xmit_doneH,
+    output wire  xmit_doneH,
     output reg  uart_xmit_dataH
 );
  
@@ -31,6 +31,15 @@ begin
     else
         c_state <= n_state;
 end
+
+
+
+
+reg previous_xmitH;
+
+
+always @(posedge xmitH )
+previous_xmitH<=1; 
  
 
 always @(posedge baud_tick or negedge rst)
@@ -40,14 +49,15 @@ begin
         count     <= 4'd0;
         count_bit <= 4'd0;
         shift     <= 8'd0;
-        xmit_doneH <= 1'b0;
+        //xmit_doneH <= 1'b0;
     end
     
     else if (baud_tick)   
     begin
-        xmit_doneH <= 1'b0;   
- 
-        if (c_state == idle && xmitH)
+        //xmit_doneH <= 1'b0;   
+        
+        if (c_state == start) previous_xmitH = (xmitH)? 1:0; 
+        if (c_state == idle &&  previous_xmitH)
         begin
             shift     <= xmit_dataH;
             count     <= 4'd0;
@@ -61,7 +71,7 @@ begin
  
             if (c_state == data)   shift <= shift >> 1;
            
-            if (c_state == stop && count_bit == 4'd9)   xmit_doneH <= 1'b1;
+            //if (c_state == stop && count_bit == 4'd9)   xmit_doneH <= 1'b1;
             
         end
         else
@@ -81,7 +91,7 @@ end
 always @(*)
 begin
     case (c_state)
-             idle: n_state = xmitH?start:idle;
+             idle: n_state = previous_xmitH?start:idle;
              start: n_state = (count == 4'd15)?data:start;
              data: n_state = (count_bit == 4'd8 && count==4'd15)?stop:data;
              stop: n_state = (count == 4'd15)?idle:stop;
@@ -105,5 +115,7 @@ begin
 end
  
 assign xmit_active =(c_state!=idle);
+assign xmit_doneH =(c_state==idle);
+
  
 endmodule
