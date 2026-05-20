@@ -13,7 +13,7 @@ U_xmit Tx(.clk(sys_clk), .rst(sys_rst_l), .baud_tick(baud_tick),
             .xmit_doneH(xmit_doneH), .uart_xmit_dataH(uart_XMIT_dataH));
 
 U_rec Rx(.clk(sys_clk),.rst(sys_rst_l),  .baud_tick(baud_tick),
-            .uart_rec_dataH(uart_XMIT_dataH),   .rec_dataH(rec_dataH),
+            .uart_rec_dataH(uart_XMIT_dataH),  .rec_dataH(rec_dataH),
             .rec_readyH(rec_readyH), .rec_busy(rec_busy));		
 		
 endmodule
