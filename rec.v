@@ -7,7 +7,7 @@ module U_rec(
    input  wire  baud_tick,          
    input  wire  uart_rec_dataH,
    output reg  [7:0]rec_dataH,
-   output reg  rec_readyH,
+   output wire  rec_readyH,
    output wire  rec_busy
 );
  
@@ -103,19 +103,21 @@ begin
     if (!rst)
     begin
         rec_dataH <= 8'd0;
-        rec_readyH<=1'b0;
+        
     end
     else
     begin
-        rec_readyH<= 1'b0;
+        
         if (c_state == stop && count == 4'd15 && count_bit == 4'd10)
         begin
             rec_dataH <= shift_rec;
-            rec_readyH <= 1'b1;
+         
         end
     end
 end
  
 assign rec_busy=(c_state!= idle);
+assign rec_readyH=(c_state== idle);
+
  
 endmodule
