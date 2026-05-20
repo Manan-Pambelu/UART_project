@@ -25,7 +25,7 @@ reg FF1,FF2;
 wire INP=FF2;
  
 //synchronizer
-always @(posedge clk or negedge rst)
+   always @(posedge baud_tick or negedge rst)
 begin
     if (!rst)
     begin
